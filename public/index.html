@@ -1,0 +1,577 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>RPS - Multi Client (Socket)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, hsl(259, 78%, 47%) 100%);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 80%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2.2rem;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+        }
+
+        #status {
+            text-align: center;
+            margin-bottom: 25px;
+            padding: 12px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+            font-weight: 600;
+            color: #555;
+            font-size: 1.1rem;
+        }
+
+        #play-area {
+            margin-bottom: 25px;
+        }
+
+        #controls {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .move {
+            flex: 1;
+            padding: 20px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 3rem;
+            background: linear-gradient(145deg, #f0f0f0, #ffffff);
+            box-shadow:
+                0 8px 16px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .move:hover:not(:disabled) {
+            transform: translateY(-5px);
+            box-shadow:
+                0 15px 30px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        }
+
+        .move:active:not(:disabled) {
+            transform: translateY(-2px);
+        }
+
+        .move:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #btn-rock {
+            background: linear-gradient(145deg, #ff9a56, #ffad76);
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        #btn-paper {
+            background: linear-gradient(145deg, #4facfe, #00f2fe);
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        #btn-scissors {
+            background: linear-gradient(145deg, #43e97b, #38f9d7);
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        #info {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        #moves {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        #result {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        #score {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        #rematch {
+            padding: 12px 24px;
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        #rematch:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        #history-box,
+        #chat {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        #history-box h3,
+        #chat h3 {
+            margin-bottom: 15px;
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        #history {
+            max-height: 150px;
+            overflow-y: auto;
+            padding-left: 20px;
+        }
+
+        #history li {
+            margin-bottom: 8px;
+            color: #666;
+        }
+
+        #chat-messages {
+            height: 120px;
+            overflow-y: auto;
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            border-radius: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            margin-bottom: 15px;
+        }
+
+        #chat-form {
+            display: flex;
+            gap: 10px;
+        }
+
+        #chat-input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            border-radius: 10px;
+            outline: none;
+            transition: border-color 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        #chat-input:focus {
+            border-color: #667eea;
+        }
+
+        #chat-form button {
+            padding: 12px 20px;
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        #chat-form button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Notification styles */
+        #notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            display: none;
+            z-index: 1000;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .notification-in {
+            animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .notification-out {
+            animation: slideOut 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        /* Responsive */
+        @media (max-width: 500px) {
+            .container {
+                margin: 10px;
+                padding: 20px;
+            }
+
+            .move {
+                font-size: 2.5rem;
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(145deg, #5a6fd8, #6a4190);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎮 Kéo Búa Bao</h1>
+        <div id="status">Kết nối...</div>
+
+        <div id="play-area">
+            <div id="controls">
+                <button id="btn-rock" class="move" title="Búa">✊</button>
+                <button id="btn-paper" class="move" title="Bao">✋</button>
+                <button id="btn-scissors" class="move" title="Kéo">✌️</button>
+            </div>
+
+            <div id="info">
+                <div id="moves"></div>
+                <div id="result"></div>
+                <div id="score">0 - 0</div>
+                <button id="rematch" style="display:none">🔄 Chơi lại</button>
+            </div>
+        </div>
+
+        <div id="history-box">
+            <h3>📊 Lịch sử</h3>
+            <ul id="history"></ul>
+        </div>
+
+        <div id="chat">
+            <h3>💬 Chat</h3>
+            <div id="chat-messages"></div>
+            <form id="chat-form">
+                <input id="chat-input" placeholder="Nhập tin nhắn..." />
+                <button type="submit">📤</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        const statusEl = document.getElementById('status');
+        const btnRock = document.getElementById('btn-rock');
+        const btnPaper = document.getElementById('btn-paper');
+        const btnScissors = document.getElementById('btn-scissors');
+        const movesEl = document.getElementById('moves');
+        const resultEl = document.getElementById('result');
+        const scoreEl = document.getElementById('score');
+        const rematchBtn = document.getElementById('rematch');
+
+        let currentRoom = null;
+        let myId = null;
+        let opponentId = null;
+        let score = { me: 0, opp: 0 };
+        const historyEl = document.getElementById('history');
+        let roundNumber = 0;
+
+        const notificationEl = document.createElement('div');
+        notificationEl.id = 'notification';
+        document.body.appendChild(notificationEl);
+
+        function showNotification(message, type = 'info', duration = 3000) {
+            notificationEl.textContent = message;
+
+            const colors = {
+                'info': 'linear-gradient(145deg, #4facfe, #00f2fe)',
+                'success': 'linear-gradient(145deg, #43e97b, #38f9d7)',
+                'warning': 'linear-gradient(145deg, #fa709a, #fee140)',
+                'alert': 'linear-gradient(145deg, #ff6b6b, #ee5a52)'
+            };
+            notificationEl.style.background = colors[type] || colors['info'];
+            notificationEl.style.display = 'block';
+            notificationEl.className = 'notification-in';
+
+            if (duration > 0) {
+                setTimeout(() => {
+                    notificationEl.className = 'notification-out';
+                    setTimeout(() => {
+                        notificationEl.style.display = 'none';
+                    }, 400);
+                }, duration);
+            }
+        }
+
+        function enableButtons(enable) {
+            btnRock.disabled = !enable;
+            btnPaper.disabled = !enable;
+            btnScissors.disabled = !enable;
+        }
+
+        function updateScore() {
+            scoreEl.textContent = `${score.me} - ${score.opp}`;
+        }
+
+        socket.on('connect', () => {
+            myId = socket.id;
+            console.log('Connected with ID:', myId);
+            statusEl.textContent = '🔄 Kết nối máy chủ — tìm đối thủ...';
+            socket.emit('joinQueue');
+        });
+
+        socket.on('waiting', () => {
+            statusEl.textContent = '⏳ Đang chờ đối thủ...';
+            enableButtons(false);
+        });
+
+        socket.on('matched', ({ roomId, players }) => {
+            currentRoom = roomId;
+            opponentId = players.find(id => id !== myId);
+            console.log('Matched! Room:', currentRoom, 'Players:', players);
+            statusEl.textContent = '🎯 Đã ghép đôi — chọn tay của bạn!';
+            enableButtons(true);
+            rematchBtn.style.display = 'none';
+            movesEl.textContent = '';
+            resultEl.textContent = '';
+
+            showNotification('🎮 Đã tìm thấy đối thủ! Bắt đầu trò chơi!', 'success');
+        });
+
+        socket.on('opponentMadeMove', ({ message }) => {
+            showNotification('⚡ ' + message, 'warning', 5000);
+            statusEl.textContent = '⚡ ' + message;
+        });
+
+        socket.on('roundResult', ({ moves, winner }) => {
+            const myMove = moves[myId];
+            const oppMove = moves[opponentId];
+
+            const moveEmojis = {
+                'rock': '✊',
+                'paper': '✋',
+                'scissors': '✌️'
+            };
+
+            movesEl.textContent = `Bạn: ${moveEmojis[myMove]} — Đối thủ: ${moveEmojis[oppMove]}`;
+            roundNumber++;
+
+            if (!winner) {
+                resultEl.textContent = '🤝 Hòa!';
+                showNotification('🤝 Kết quả: Hòa!', 'info');
+            } else if (winner === myId) {
+                resultEl.textContent = '🎉 Bạn thắng!';
+                score.me++;
+                showNotification('🎉 Bạn thắng round này!', 'success');
+            } else {
+                resultEl.textContent = '😢 Bạn thua!';
+                score.opp++;
+                showNotification('😢 Bạn thua round này!', 'alert');
+            }
+
+            updateScore();
+            enableButtons(false);
+            rematchBtn.style.display = 'inline-block';
+            statusEl.textContent = '✅ Round kết thúc - Bấm Chơi lại để tiếp tục!';
+
+            const li = document.createElement('li');
+            const moveNames = { 'rock': 'Búa', 'paper': 'Bao', 'scissors': 'Kéo' };
+            let text = `Round ${roundNumber}: ${moveNames[myMove]} vs ${moveNames[oppMove]} → `;
+            if (!winner) text += '🤝 Hòa';
+            else if (winner === myId) text += '🎉 Thắng';
+            else text += '😢 Thua';
+            li.textContent = text;
+            historyEl.appendChild(li);
+        });
+
+        socket.on('newRound', () => {
+            resultEl.textContent = '';
+            movesEl.textContent = '';
+            rematchBtn.style.display = 'none';
+            enableButtons(true);
+            statusEl.textContent = '🎯 Round mới — chọn tay của bạn!';
+            showNotification('🆕 Round mới bắt đầu!', 'info');
+        });
+
+        socket.on('opponentLeft', () => {
+            statusEl.textContent = '👋 Đối thủ đã rời. Tự động tìm đối thủ mới...';
+            opponentId = null;
+            currentRoom = null;
+            enableButtons(false);
+            showNotification('👋 Đối thủ đã rời khỏi trò chơi', 'warning');
+            socket.emit('joinQueue');
+        });
+
+        socket.on('chatMessage', ({ sender, message }) => {
+            console.log('Received chat message:', { sender, message });
+            const who = sender === myId ? 'Bạn' : 'Đối thủ';
+            addChat(`${who}: ${message}`);
+
+            if (sender !== myId) {
+                showNotification(`💬 ${message}`, 'info', 2000);
+            }
+        });
+
+        btnRock.onclick = () => sendMove('rock');
+        btnPaper.onclick = () => sendMove('paper');
+        btnScissors.onclick = () => sendMove('scissors');
+
+        rematchBtn.onclick = () => {
+            if (currentRoom) socket.emit('playAgain', { roomId: currentRoom });
+            rematchBtn.style.display = 'none';
+            resultEl.textContent = '⏳ Đang chờ đối thủ đồng ý...';
+            statusEl.textContent = '⏳ Đang chờ đối thủ đồng ý...';
+            enableButtons(false);
+            showNotification('📤 Đã gửi yêu cầu chơi lại...', 'info');
+        };
+
+        function sendMove(move) {
+            if (!currentRoom) return;
+            enableButtons(false);
+
+            const moveNames = {
+                'rock': 'Búa ✊',
+                'paper': 'Bao ✋',
+                'scissors': 'Kéo ✌️'
+            };
+
+            resultEl.textContent = `Bạn đã chọn ${moveNames[move]}. Chờ đối thủ...`;
+            statusEl.textContent = `✅ Bạn đã chọn ${moveNames[move]}. Chờ đối thủ...`;
+            socket.emit('playerMove', { roomId: currentRoom, move });
+
+            showNotification(`✅ Bạn đã chọn ${moveNames[move]}!`, 'info');
+        }
+
+        function addChat(text) {
+            console.log('Adding chat message:', text);
+            const msgDiv = document.createElement('div');
+            msgDiv.textContent = text;
+            msgDiv.style.marginBottom = '8px';
+            msgDiv.style.padding = '8px';
+            msgDiv.style.background = 'rgba(102, 126, 234, 0.1)';
+            msgDiv.style.borderRadius = '8px';
+            document.getElementById('chat-messages').appendChild(msgDiv);
+            document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+        }
+
+        document.getElementById('chat-form').onsubmit = (e) => {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+
+            if (message && currentRoom) {
+                socket.emit('chatMessage', { roomId: currentRoom, message });
+                input.value = '';
+            }
+        };
+
+        // Initialize
+        enableButtons(false);
+        updateScore();
+
+        // Debug
+        setInterval(() => {
+            console.log('Debug - Current room:', currentRoom, 'My ID:', myId);
+        }, 10000);
+    </script>
+</body>
+
+</html>
