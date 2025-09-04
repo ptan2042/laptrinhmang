@@ -321,7 +321,7 @@
 
 <body>
     <div class="container">
-        <h1>🎮 Kéo Búa Bao</h1>
+        <h1>🎮 Trò chơi Kéo Búa Bao</h1>
         <div id="status">Kết nối...</div>
 
         <div id="play-area">
@@ -458,19 +458,19 @@
                 resultEl.textContent = '🤝 Hòa!';
                 showNotification('🤝 Kết quả: Hòa!', 'info');
             } else if (winner === myId) {
-                resultEl.textContent = '🎉 Bạn thắng!';
+                resultEl.textContent = '🎉 Bạn thắng rồi!';
                 score.me++;
-                showNotification('🎉 Bạn thắng round này!', 'success');
+                showNotification('🎉 Bạn đã thắng round này!', 'success');
             } else {
-                resultEl.textContent = '😢 Bạn thua!';
+                resultEl.textContent = '😢 Bạn thua mất rồi!';
                 score.opp++;
-                showNotification('😢 Bạn thua round này!', 'alert');
+                showNotification('😢 Bạn đã thua round này!', 'alert');
             }
 
             updateScore();
             enableButtons(false);
             rematchBtn.style.display = 'inline-block';
-            statusEl.textContent = '✅ Round kết thúc - Bấm Chơi lại để tiếp tục!';
+            statusEl.textContent = '✅ Round đã kết thúc - Vui lòng bấm Chơi lại để tiếp tục!';
 
             const li = document.createElement('li');
             const moveNames = { 'rock': 'Búa', 'paper': 'Bao', 'scissors': 'Kéo' };
@@ -487,7 +487,7 @@
             movesEl.textContent = '';
             rematchBtn.style.display = 'none';
             enableButtons(true);
-            statusEl.textContent = '🎯 Round mới — chọn tay của bạn!';
+            statusEl.textContent = '🎯 Round mới — hãy chọn tay của bạn!';
             showNotification('🆕 Round mới bắt đầu!', 'info');
         });
 
